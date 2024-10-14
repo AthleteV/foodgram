@@ -3,7 +3,6 @@ volumes:
   static:
   media:
 
-
 services:
   db:
     container_name: foodgram-db
@@ -18,7 +17,7 @@ services:
 
   backend:
     container_name: foodgram-back
-    build: ../backend
+    image: athletev/foodgram_backend
     command: /bin/sh -c "./load.sh && gunicorn foodgram.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - static:/static
@@ -30,14 +29,14 @@ services:
 
   frontend:
     container_name: foodgram-front
-    build: ../frontend
+    image: athletev/foodgram_frontend
     command: cp -r /app/build/. /static/
     volumes:
       - static:/static
 
   nginx:
     container_name: foodgram-proxy
-    build: .
+    image: athletev/foodgram_nginx
     ports:
       - "8000:80"
     volumes:
