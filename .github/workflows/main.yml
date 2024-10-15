@@ -22,7 +22,7 @@ jobs:
         run: python -m flake8 backend/
 
   build_and_push_to_docker_hub:
-    name: Push Docker image to DockerHub
+    name: Push backend Docker image to DockerHub
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' 
     needs: tests
@@ -36,7 +36,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Push to DockerHub
+      - name: Push backend image to DockerHub
         uses: docker/build-push-action@v4
         with:
           context: ./backend/
@@ -57,15 +57,15 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Push to DockerHub
+      - name: Push frontend image to DockerHub
         uses: docker/build-push-action@v4
         with:
           context: ./frontend/
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_frontend:latest
 
   build_nginx_and_push_to_docker_hub:
-    name: Push gateway Docker image to DockerHub
+    name: Push nginx Docker image to DockerHub
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
@@ -78,12 +78,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Push to DockerHub
+      - name: Push nginx image to DockerHub
         uses: docker/build-push-action@v4
         with:
           context: ./infra/
           push: true
-          tags: athletev/foodgram_nginx:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_nginx:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -118,4 +118,3 @@ jobs:
             # Перезапуск контейнеров
             sudo docker compose -f docker-compose.production.yml down
             sudo docker compose -f docker-compose.production.yml up -d
-#try7
