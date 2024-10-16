@@ -94,6 +94,19 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+
+      # Шаг для проверки прав пользователя на запись в директорию
+      - name: Check write permissions for foodgram directory
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            touch ~/foodgram/test_file && rm ~/foodgram/test_file
+
+      # Шаг копирования docker-compose.production.yml
       - name: Copy docker-compose.yml via ssh
         uses: appleboy/scp-action@master
         with:
@@ -103,6 +116,8 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: "infra/docker-compose.production.yml"
           target: "~/foodgram/docker-compose.production.yml"
+
+      # Шаг деплоя
       - name: Executing remote ssh commands to deploy
         uses: appleboy/ssh-action@master
         with:
