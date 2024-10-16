@@ -95,6 +95,19 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      # Удаление существующей директории с таким же именем как файл
+      - name: Remove existing docker-compose.production.yml directory if exists
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            if [ -d "~/foodgram/docker-compose.production.yml" ]; then
+              rm -rf ~/foodgram/docker-compose.production.yml
+            fi
+
       # Шаг для проверки прав пользователя на запись в директорию
       - name: Check write permissions for foodgram directory
         uses: appleboy/ssh-action@master
@@ -115,8 +128,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: "infra/docker-compose.production.yml"
-          target: "~/foodgram/docker-compose.production.yml"  # Явно указываем, что это файл
-          rm: true  # Удаляем целевой файл, если он уже существует
+          target: "~/foodgram/docker-compose.production.yml"
+          rm: true
 
       # Шаг деплоя
       - name: Executing remote ssh commands to deploy
