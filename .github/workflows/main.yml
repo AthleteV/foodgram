@@ -115,7 +115,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: "infra/docker-compose.production.yml"
-          target: "~/foodgram/docker-compose.production.yml"
+          target: "~/foodgram/docker-compose.production.yml"  # Явно указываем, что это файл
 
       # Шаг деплоя
       - name: Executing remote ssh commands to deploy
