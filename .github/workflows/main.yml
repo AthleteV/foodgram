@@ -105,6 +105,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             if [ -d "~/foodgram/docker-compose.production.yml" ]; then
+              echo "Directory docker-compose.production.yml exists. Removing it."
               rm -rf ~/foodgram/docker-compose.production.yml
             fi
 
