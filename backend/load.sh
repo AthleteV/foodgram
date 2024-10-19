@@ -19,7 +19,7 @@ else
     User.objects.filter(username='$ADMIN_USERNAME').exists() or \
     User.objects.create_superuser('$ADMIN_USERNAME', '$ADMIN_EMAIL', '$ADMIN_PASSWORD')" | python manage.py shell
     
-    # Добавление предопределённых тегов
+    # Добавление тегов
     echo "Добавление предопределённых тегов..."
     python manage.py shell -c "
 from recipes.models import Tag
@@ -39,5 +39,5 @@ for tag_data in tags:
 "
 fi
 
-# Сборка файлов статики
+# Сборка статики
 python manage.py collectstatic --noinput
