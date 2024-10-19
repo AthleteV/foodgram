@@ -9,6 +9,14 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 
+# Поле для относительных URL изображений
+class RelativeImageField(serializers.ImageField):
+    def to_representation(self, value):
+        if not value:
+            return None
+        return value.url
+
+
 class Base64ImageFieldDecoder(serializers.ImageField):
     """Поле для обработки изображений в формате Base64."""
     def to_internal_value(self, data):
@@ -30,7 +38,7 @@ class UserRegistrationSerializer(UserCreateSerializer):
 class UserProfileSerializer(UserSerializer):
     """Сериализатор профиля пользователя."""
     is_subscribed = serializers.SerializerMethodField()
-    avatar = serializers.ImageField(read_only=True)
+    avatar = RelativeImageField(read_only=True)
 
     class Meta:
         model = User
@@ -55,7 +63,7 @@ class SetAvatarSerializer(serializers.Serializer):
 
 class SetAvatarResponseSerializer(serializers.ModelSerializer):
     """Сериализатор ответа с аватаром."""
-    avatar = serializers.ImageField()
+    avatar = RelativeImageField()
 
     class Meta:
         model = User
@@ -131,7 +139,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientInputSerializer(serializers.ModelSerializer):
-    """Сериализатор ввода ингредиента в рецепте. """
+    """Сериализатор ввода ингредиента в рецепте."""
     id = serializers.PrimaryKeyRelatedField(
         source='ingredient', queryset=Ingredient.objects.all()
     )
@@ -164,7 +172,7 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
     )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    image = serializers.ImageField(read_only=True)
+    image = RelativeImageField(read_only=True)
 
     class Meta:
         model = Recipe
@@ -189,7 +197,7 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
 
 class RecipeShortSerializer(serializers.ModelSerializer):
     """Сериализатор краткой информации рецепта."""
-    image = serializers.ImageField(read_only=True)
+    image = RelativeImageField(read_only=True)
 
     class Meta:
         model = Recipe
