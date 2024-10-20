@@ -76,7 +76,7 @@ class Subscribe(models.Model):
         ]
 
     def __str__(self):
-        return f"Пользователь {self.user} подписан на автора {self.author}"
+        return f"{self.user} на автора {self.author}"
 
 
 class Tag(models.Model):
