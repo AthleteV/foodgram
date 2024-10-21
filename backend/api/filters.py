@@ -9,7 +9,7 @@ class IngredientFilter(FilterSet):
 
     class Meta:
         model = Ingredient
-        fields = ['name']
+        fields = ('name',)
 
 
 class RecipeFilter(FilterSet):
@@ -30,7 +30,7 @@ class RecipeFilter(FilterSet):
 
     class Meta:
         model = Recipe
-        fields = ['author', 'tags', 'is_favorited', 'is_in_shopping_cart']
+        fields = ('author', 'tags', 'is_favorited', 'is_in_shopping_cart',)
 
     def filter_is_favorited(self, queryset, name, value):
         """Фильтрация рецептов в избранном."""

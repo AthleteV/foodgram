@@ -5,26 +5,30 @@ from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from .image_fields import Base64ImageFieldDecoder, RelativeImageField
+from .image_fields import Base64ImageFieldDecoder
 
 
 class UserRegistrationSerializer(UserCreateSerializer):
     """Сериализатор регистрации пользователя."""
     class Meta(UserCreateSerializer.Meta):
         model = User
-        fields = ('id', 'email', 'username', 'first_name',
-                  'last_name', 'password',)
+        fields = (
+            'id', 'email', 'username', 'first_name',
+            'last_name', 'password',
+        )
 
 
 class UserProfileSerializer(UserSerializer):
     """Сериализатор профиля пользователя."""
     is_subscribed = serializers.SerializerMethodField()
-    avatar = RelativeImageField(read_only=True)
+    avatar = serializers.ImageField(read_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name',
-                  'is_subscribed', 'avatar',)
+        fields = (
+            'id', 'email', 'username', 'first_name', 'last_name',
+            'is_subscribed', 'avatar',
+        )
 
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
@@ -34,21 +38,20 @@ class UserProfileSerializer(UserSerializer):
         )
 
 
-class SetAvatarSerializer(serializers.Serializer):
-    """Сериализатор установки аватара."""
+class SetAvatarSerializer(serializers.ModelSerializer):
+    """Сериализатор установки и получения аватара."""
     avatar = Base64ImageFieldDecoder()
-
-    class Meta:
-        fields = ('avatar',)
-
-
-class SetAvatarResponseSerializer(serializers.ModelSerializer):
-    """Сериализатор ответа с аватаром."""
-    avatar = RelativeImageField()
 
     class Meta:
         model = User
         fields = ('avatar',)
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        if instance.avatar:
+            return {'avatar': request.build_absolute_uri(instance.avatar.url)}
+        else:
+            return {'avatar': None}
 
 
 class UserSubscribeSerializer(serializers.ModelSerializer):
@@ -86,8 +89,10 @@ class UserSubscribeRepresentationSerializer(UserProfileSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name',
-                  'is_subscribed', 'recipes', 'recipes_count', 'avatar',)
+        fields = (
+            'email', 'id', 'username', 'first_name', 'last_name',
+            'is_subscribed', 'recipes', 'recipes_count', 'avatar',
+        )
 
     def get_recipes(self, obj):
         request = self.context.get('request')
@@ -153,13 +158,15 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
     )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    image = RelativeImageField(read_only=True)
+    image = serializers.ImageField(read_only=True)
 
     class Meta:
         model = Recipe
-        fields = ('id', 'tags', 'author', 'ingredients',
-                  'is_favorited', 'is_in_shopping_cart',
-                  'name', 'image', 'text', 'cooking_time',)
+        fields = (
+            'id', 'tags', 'author', 'ingredients',
+            'is_favorited', 'is_in_shopping_cart',
+            'name', 'image', 'text', 'cooking_time',
+        )
 
     def get_is_favorited(self, obj):
         user = self.context['request'].user
@@ -175,14 +182,34 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
             and ShoppingCart.objects.filter(user=user, recipe=obj).exists()
         )
 
+    def to_representation(self, instance):
+        """Переопределяем для формирования абсолютного URL изображения."""
+        representation = super().to_representation(instance)
+        request = self.context.get('request')
+        if representation['image']:
+            representation['image'] = request.build_absolute_uri(
+                representation['image']
+            )
+        return representation
+
 
 class RecipeShortSerializer(serializers.ModelSerializer):
-    """Сериализатор краткой информации рецепта."""
-    image = RelativeImageField(read_only=True)
+    """Сериализатор краткой информации о рецепте."""
+    image = serializers.ImageField(read_only=True)
 
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
+
+    def to_representation(self, instance):
+        """Переопределяем для формирования абсолютного URL изображения."""
+        representation = super().to_representation(instance)
+        request = self.context.get('request')
+        if representation['image']:
+            representation['image'] = request.build_absolute_uri(
+                representation['image']
+            )
+        return representation
 
 
 class RecipeCreateUpdateDetailSerializer(serializers.ModelSerializer):
@@ -196,8 +223,10 @@ class RecipeCreateUpdateDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ('tags', 'ingredients', 'name', 'image', 'text',
-                  'cooking_time',)
+        fields = (
+            'tags', 'ingredients', 'name', 'image', 'text',
+            'cooking_time',
+        )
 
     def validate(self, data):
         ingredients = data.get('ingredients')

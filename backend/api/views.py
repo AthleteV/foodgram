@@ -3,8 +3,7 @@ from api.permissions import IsAdminAuthorOrReadOnly
 from api.serializers import (FavoriteRecipeSerializer, IngredientSerializer,
                              RecipeCreateUpdateDetailSerializer,
                              RecipeDetailSerializer,
-                             RecipeShoppingCartSerializer,
-                             SetAvatarResponseSerializer, SetAvatarSerializer,
+                             RecipeShoppingCartSerializer, SetAvatarSerializer,
                              TagSerializer, UserProfileSerializer,
                              UserSubscribeRepresentationSerializer)
 from django.db.models import Sum
@@ -98,16 +97,11 @@ class UserViewSet(DjoserUserViewSet):
         user = request.user
         if request.method == 'PUT':
             serializer = SetAvatarSerializer(
-                data=request.data, context={'request': request}
+                data=request.data, instance=user, context={'request': request}
             )
             serializer.is_valid(raise_exception=True)
-            user.avatar = serializer.validated_data['avatar']
-            user.save()
-            response_serializer = SetAvatarResponseSerializer(
-                user, context={'request': request}
-            )
-            return Response(response_serializer.data,
-                            status=status.HTTP_200_OK)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         elif request.method == 'DELETE':
             user.avatar.delete(save=True)
             return Response(status=status.HTTP_204_NO_CONTENT)

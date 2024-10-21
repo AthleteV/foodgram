@@ -5,6 +5,8 @@ from rest_framework import serializers
 
 
 class RelativeImageField(serializers.ImageField):
+    """Поле ImageField, возвращающее относительный URL изображения
+    чтобы картинки корректно отображались при доступе через IP"""
     def to_representation(self, value):
         if not value:
             return None
