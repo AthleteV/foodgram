@@ -6,7 +6,6 @@ from recipes.models import Recipe
 
 
 def redirect_short_link(request, encoded_id):
-    """Перенаправить короткую ссылку на страницу рецепта."""
     try:
         decoded_id = force_str(urlsafe_base64_decode(encoded_id))
         recipe_id = int(decoded_id)

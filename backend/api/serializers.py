@@ -17,7 +17,7 @@ class UserRegistrationSerializer(UserCreateSerializer):
 
 
 class UserProfileSerializer(UserSerializer):
-    """Сериализатор профиля пользователя."""
+    """Сериализатор данных профиля пользователя и подписки"""
     is_subscribed = serializers.SerializerMethodField()
     avatar = serializers.ImageField(read_only=True)
 
@@ -70,7 +70,7 @@ class UserSubscribeSerializer(serializers.ModelSerializer):
 
 
 class UserSubscribeRepresentationSerializer(UserProfileSerializer):
-    """Сериализатор представления подписки."""
+    """Сериализатор отображения подписки и рецептов автора"""
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.IntegerField(
         source='recipes.count', read_only=True
@@ -112,7 +112,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientInputSerializer(serializers.ModelSerializer):
-    """Сериализатор ввода ингредиента в рецепте."""
+    """Сериализатор для добавления ингредиентов в рецепт"""
     id = serializers.PrimaryKeyRelatedField(
         source='ingredient', queryset=Ingredient.objects.all()
     )
