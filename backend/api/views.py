@@ -5,7 +5,8 @@ from api.serializers import (FavoriteRecipeSerializer, IngredientSerializer,
                              RecipeDetailSerializer,
                              RecipeShoppingCartSerializer, SetAvatarSerializer,
                              TagSerializer, UserProfileSerializer,
-                             UserSubscribeRepresentationSerializer)
+                             UserSubscribeRepresentationSerializer,
+                             UserSubscribeSerializer)
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -42,15 +43,10 @@ class UserViewSet(DjoserUserViewSet):
         user = request.user
         queryset = User.objects.filter(subscribing__user=user)
         page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = UserSubscribeRepresentationSerializer(
-                page, many=True, context={'request': request}
-            )
-            return self.get_paginated_response(serializer.data)
         serializer = UserSubscribeRepresentationSerializer(
-            queryset, many=True, context={'request': request}
+            page, many=True, context={'request': request}
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
     @action(
         detail=True, methods=['post'],
@@ -59,17 +55,13 @@ class UserViewSet(DjoserUserViewSet):
     def subscribe(self, request, id=None):
         user = request.user
         author = get_object_or_404(User, id=id)
-
-        if user == author:
-            raise BadRequestException('Нельзя подписаться на самого себя.')
-        if Subscribe.objects.filter(user=user, author=author).exists():
-            raise BadRequestException(
-                'Вы уже подписаны на этого пользователя.'
-            )
-        Subscribe.objects.create(user=user, author=author)
-        serializer = UserSubscribeRepresentationSerializer(
-            author, context={'request': request}
+        data = {'user': user.id, 'author': author.id}
+        serializer = UserSubscribeSerializer(
+            data=data,
+            context={'request': request}
         )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(
             serializer.data, status=status.HTTP_201_CREATED
         )
@@ -78,33 +70,32 @@ class UserViewSet(DjoserUserViewSet):
     def unsubscribe(self, request, id=None):
         user = request.user
         author = get_object_or_404(User, id=id)
-
         subscription = Subscribe.objects.filter(user=user, author=author)
         if subscription.exists():
             subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        raise BadRequestException(
-            'Вы не подписаны на этого пользователя.'
-        )
+        raise BadRequestException('Вы не подписаны на этого пользователя.')
 
     @action(
         detail=False,
-        methods=['put', 'delete'],
+        methods=['put'],
         permission_classes=[IsAuthenticated],
         url_path='me/avatar',
     )
-    def avatar(self, request):
+    def set_avatar(self, request):
         user = request.user
-        if request.method == 'PUT':
-            serializer = SetAvatarSerializer(
-                data=request.data, instance=user, context={'request': request}
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        elif request.method == 'DELETE':
-            user.avatar.delete(save=True)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        serializer = SetAvatarSerializer(
+            data=request.data, instance=user, context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @set_avatar.mapping.delete
+    def delete_avatar(self, request):
+        user = request.user
+        user.avatar.delete(save=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -141,12 +132,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def add_recipe_to(self, model, serializer_class, request, pk):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
-
-        if model.objects.filter(user=user, recipe=recipe).exists():
-            raise BadRequestException('Рецепт уже добавлен.')
-
+        data = {'user': user.id, 'recipe': recipe.id}
         serializer = serializer_class(
-            data={'user': user.id, 'recipe': recipe.id},
+            data=data,
             context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
@@ -156,7 +144,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def remove_recipe_from(self, model, request, pk, error_message):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
-
         instance = model.objects.filter(user=user, recipe=recipe)
         if instance.exists():
             instance.delete()

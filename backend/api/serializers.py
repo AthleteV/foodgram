@@ -34,17 +34,9 @@ class UserProfileSerializer(UserSerializer):
         )
 
 
-class SetAvatarSerializer(serializers.Serializer):
-    """Сериализатор установки аватара."""
+class SetAvatarSerializer(serializers.ModelSerializer):
+    """Сериализатор установки аватара и получения его URL."""
     avatar = Base64ImageFieldDecoder()
-
-    class Meta:
-        fields = ('avatar',)
-
-
-class SetAvatarResponseSerializer(serializers.ModelSerializer):
-    """Сериализатор ответа с аватаром."""
-    avatar = serializers.ImageField()
 
     class Meta:
         model = User
@@ -120,7 +112,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientInputSerializer(serializers.ModelSerializer):
-    """Сериализатор ввода ингредиента в рецепте. """
+    """Сериализатор ввода ингредиента в рецепте."""
     id = serializers.PrimaryKeyRelatedField(
         source='ingredient', queryset=Ingredient.objects.all()
     )
