@@ -250,7 +250,7 @@ class RecipeCreateUpdateDetailSerializer(serializers.ModelSerializer):
 
 
 class BaseRecipeActionSerializer(serializers.ModelSerializer):
-    """Базовый сериализатор для работы с избранным и корзиной."""
+    """Сериализатор для работы с избранным и корзиной."""
     class Meta:
         fields = ('user', 'recipe')
 
@@ -262,9 +262,8 @@ class BaseRecipeActionSerializer(serializers.ModelSerializer):
 
 class FavoriteRecipeSerializer(BaseRecipeActionSerializer):
     """Сериализатор добавления рецепта в избранное."""
-    class Meta:
+    class Meta(BaseRecipeActionSerializer.Meta):
         model = Favorite
-        fields = ('user', 'recipe')
         validators = [
             UniqueTogetherValidator(
                 queryset=Favorite.objects.all(),
@@ -276,9 +275,8 @@ class FavoriteRecipeSerializer(BaseRecipeActionSerializer):
 
 class RecipeShoppingCartSerializer(BaseRecipeActionSerializer):
     """Сериализатор добавления рецепта в корзину покупок."""
-    class Meta:
+    class Meta(BaseRecipeActionSerializer.Meta):
         model = ShoppingCart
-        fields = ('user', 'recipe')
         validators = [
             UniqueTogetherValidator(
                 queryset=ShoppingCart.objects.all(),
