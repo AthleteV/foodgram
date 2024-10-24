@@ -197,22 +197,22 @@ class RecipeCreateUpdateDetailSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'ingredients': 'Рецепт должен содержать хотя бы 1 ингредиент.'
             })
-        unique_ingredients = set()
-        for ingredient in ingredients:
-            ingredient_id = ingredient['ingredient'].id
-            if ingredient_id in unique_ingredients:
-                raise serializers.ValidationError({
-                    'ingredients': 'Ингредиенты должны быть уникальными.'
-                })
-            unique_ingredients.add(ingredient_id)
+        ingredient_ids = [ingredient['ingredient'].id for ingredient in ingredients]
+        unique_ids = set(ingredient_ids)
+        if len(ingredient_ids) != len(unique_ids):
+            duplicates = [str(ingredient_id) for ingredient_id in unique_ids if ingredient_ids.count(ingredient_id) > 1]
+            raise serializers.ValidationError({
+                'ingredients': f'Ингредиенты должны быть уникальными. Повторяются: {", ".join(duplicates)}'
+            })
         tags = data.get('tags')
         if not tags:
             raise serializers.ValidationError({
                 'tags': 'Рецепт должен иметь хотя бы 1 тег.'
             })
-        if len(set(tags)) != len(tags):
+        if len(tags) != len(set(tags)):
+            duplicates = [str(tag.id) for tag in tags if tags.count(tag) > 1]
             raise serializers.ValidationError({
-                'tags': 'Теги должны быть уникальными.'
+                'tags': f'Теги должны быть уникальными. Повторяются: {", ".join(duplicates)}'
             })
         return data
 

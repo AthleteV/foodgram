@@ -7,7 +7,7 @@ from api.serializers import (FavoriteRecipeSerializer, IngredientSerializer,
                              TagSerializer, UserProfileSerializer,
                              UserSubscribeRepresentationSerializer,
                              UserSubscribeSerializer)
-from django.db.models import Sum
+from django.db.models import Exists, OuterRef, Sum, Value, BooleanField
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes
@@ -18,10 +18,9 @@ from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Subscribe, Tag, User)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-
-from .exceptions import BadRequestException
 
 
 class UserViewSet(DjoserUserViewSet):
@@ -74,7 +73,7 @@ class UserViewSet(DjoserUserViewSet):
         if subscription.exists():
             subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        raise BadRequestException('Вы не подписаны на этого пользователя.')
+        raise ValidationError('Вы не подписаны на этого пользователя.')
 
     @action(
         detail=False,
@@ -118,11 +117,33 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """Вьюсет для работы с рецептами."""
-    queryset = Recipe.objects.all()
     permission_classes = [IsAdminAuthorOrReadOnly]
     http_method_names = ['get', 'post', 'patch', 'delete']
     filter_backends = [DjangoFilterBackend]
     filterset_class = RecipeFilter
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Recipe.objects.select_related('author').prefetch_related(
+            'tags', 'recipe_ingredients__ingredient'
+        )
+
+        if user.is_authenticated:
+            queryset = queryset.annotate(
+                is_favorited=Exists(
+                    Favorite.objects.filter(user=user, recipe=OuterRef('pk'))
+                ),
+                is_in_shopping_cart=Exists(
+                    ShoppingCart.objects.filter(user=user, recipe=OuterRef('pk'))
+                )
+            )
+        else:
+            queryset = queryset.annotate(
+                is_favorited=Value(False, output_field=BooleanField()),
+                is_in_shopping_cart=Value(False, output_field=BooleanField())
+            )
+
+        return queryset
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
@@ -148,7 +169,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if instance.exists():
             instance.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        raise BadRequestException(error_message)
+        raise ValidationError(error_message)
 
     @action(
         detail=True, methods=['post'],
@@ -194,7 +215,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
         if not ingredients.exists():
-            raise BadRequestException('Ваш список покупок пуст.')
+            raise ValidationError('Ваш список покупок пуст.')
 
         shopping_list = f'Список покупок для {user.get_full_name()}:\n\n'
         for item in ingredients:
