@@ -128,15 +128,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'tags', 'recipe_ingredients__ingredient'
         )
 
-        favorite_filter = Favorite.objects.filter(
-            user=user, recipe=OuterRef('pk'))
-        shopping_cart_filter = ShoppingCart.objects.filter(
-            user=user, recipe=OuterRef('pk'))
-
         if user.is_authenticated:
             queryset = queryset.annotate(
-                is_favorited=Exists(favorite_filter),
-                is_in_shopping_cart=Exists(shopping_cart_filter)
+                is_favorited=Exists(
+                    Favorite.objects.filter(user=user, recipe=OuterRef('pk'))
+                ),
+                is_in_shopping_cart=Exists(
+                    ShoppingCart.objects.filter(
+                        user=user, recipe=OuterRef('pk'))
+                )
             )
         else:
             queryset = queryset.annotate(
