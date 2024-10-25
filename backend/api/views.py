@@ -7,7 +7,7 @@ from api.serializers import (FavoriteRecipeSerializer, IngredientSerializer,
                              TagSerializer, UserProfileSerializer,
                              UserSubscribeRepresentationSerializer,
                              UserSubscribeSerializer)
-from django.db.models import Exists, OuterRef, Sum, Value, BooleanField
+from django.db.models import BooleanField, Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes
@@ -128,14 +128,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'tags', 'recipe_ingredients__ingredient'
         )
 
+        favorite_filter = Favorite.objects.filter(
+            user=user, recipe=OuterRef('pk'))
+        shopping_cart_filter = ShoppingCart.objects.filter(
+            user=user, recipe=OuterRef('pk'))
+
         if user.is_authenticated:
             queryset = queryset.annotate(
-                is_favorited=Exists(
-                    Favorite.objects.filter(user=user, recipe=OuterRef('pk'))
-                ),
-                is_in_shopping_cart=Exists(
-                    ShoppingCart.objects.filter(user=user, recipe=OuterRef('pk'))
-                )
+                is_favorited=Exists(favorite_filter),
+                is_in_shopping_cart=Exists(shopping_cart_filter)
             )
         else:
             queryset = queryset.annotate(

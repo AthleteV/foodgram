@@ -149,9 +149,10 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ('id', 'tags', 'author', 'ingredients',
-                  'is_favorited', 'is_in_shopping_cart',
-                  'name', 'image', 'text', 'cooking_time',)
+        fields = (
+            'id', 'tags', 'author', 'ingredients', 'is_favorited',
+            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time',
+        )
 
     def get_is_favorited(self, obj):
         user = self.context['request'].user
@@ -197,22 +198,39 @@ class RecipeCreateUpdateDetailSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'ingredients': 'Рецепт должен содержать хотя бы 1 ингредиент.'
             })
-        ingredient_ids = [ingredient['ingredient'].id for ingredient in ingredients]
+        ingredient_ids = [
+            ingredient['ingredient'].id for ingredient in ingredients
+        ]
         unique_ids = set(ingredient_ids)
         if len(ingredient_ids) != len(unique_ids):
-            duplicates = [str(ingredient_id) for ingredient_id in unique_ids if ingredient_ids.count(ingredient_id) > 1]
+            duplicates = [
+                str(ingredient_id)
+                for ingredient_id in unique_ids
+                if ingredient_ids.count(ingredient_id) > 1
+            ]
             raise serializers.ValidationError({
-                'ingredients': f'Ингредиенты должны быть уникальными. Повторяются: {", ".join(duplicates)}'
+                'ingredients': (
+                    'Ингредиенты должны быть уникальными. '
+                    f'Повторяются: {", ".join(duplicates)}'
+                )
             })
+        # Аналогичная проверка для тегов
         tags = data.get('tags')
         if not tags:
             raise serializers.ValidationError({
                 'tags': 'Рецепт должен иметь хотя бы 1 тег.'
             })
         if len(tags) != len(set(tags)):
-            duplicates = [str(tag.id) for tag in tags if tags.count(tag) > 1]
+            duplicates = [
+                str(tag.id)
+                for tag in tags
+                if tags.count(tag) > 1
+            ]
             raise serializers.ValidationError({
-                'tags': f'Теги должны быть уникальными. Повторяются: {", ".join(duplicates)}'
+                'tags': (
+                    'Теги должны быть уникальными. '
+                    f'Повторяются: {", ".join(duplicates)}'
+                )
             })
         return data
 
