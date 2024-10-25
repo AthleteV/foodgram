@@ -1,3 +1,5 @@
+version: '3.8'
+
 volumes:
   pg_data:
   static:
@@ -11,14 +13,14 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -h $DB_HOST -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      test: ["CMD-SHELL", "pg_isready -h $DB_HOST -U $POSTGRES_USER -d $POSTGRES_DB"]
       interval: 10s
       retries: 5
 
   backend:
     container_name: foodgram-back
     image: athletev/foodgram_backend
-    command: /bin/sh -c "chmod +x ./load.sh && ./load.sh && gunicorn foodgram.wsgi:application --bind 0.0.0.0:8000"
+    command: /bin/sh -c "python manage.py loaddata && gunicorn foodgram.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - static:/static
       - media:/app/media

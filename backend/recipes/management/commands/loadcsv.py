@@ -1,6 +1,7 @@
 import csv
 
 from django.core.management import BaseCommand
+from django.db import IntegrityError
 from recipes.models import Ingredient
 
 
@@ -17,17 +18,28 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         path = kwargs['path']
+        added_count = 0
 
         with open(path, 'rt', encoding='utf-8') as file:
             reader = csv.reader(file, dialect='excel')
             ingredients_to_create = [
-                Ingredient(name=row[0], measurement_unit=row[1])
+                (row[0], row[1])
                 for row in reader if row[0]
             ]
-            Ingredient.objects.bulk_create(ingredients_to_create)
+
+            for name, measurement_unit in ingredients_to_create:
+                if not Ingredient.objects.filter(name=name).exists():
+                    try:
+                        Ingredient.objects.create(
+                            name=name, measurement_unit=measurement_unit)
+                        added_count += 1
+                    except IntegrityError:
+                        self.stdout.write(self.style.WARNING(
+                            f'Ошибка при добавлении ингредиента {name}.'
+                        ))
 
         self.stdout.write(
             self.style.SUCCESS(
-                f'Успешно загружено {len(ingredients_to_create)} ингредиентов.'
+                f'Успешно загружено {added_count} уникальных ингредиентов.'
             )
         )
