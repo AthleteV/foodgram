@@ -214,7 +214,7 @@ class RecipeCreateUpdateDetailSerializer(serializers.ModelSerializer):
                     f'Повторяются: {", ".join(duplicates)}'
                 )
             })
-        # Аналогичная проверка для тегов
+
         tags = data.get('tags')
         if not tags:
             raise serializers.ValidationError({
