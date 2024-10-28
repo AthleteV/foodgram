@@ -7,12 +7,11 @@ from recipes.models import Tag
 
 class Command(BaseCommand):
     help = (
-        'Автоматическая загрузка данных, создание суперпользователя и '
-        'добавление предопределённых тегов'
+        'Загрузка данных из CSV, создание суперпользователя и '
+        'тегов, запуск миграций'
     )
 
     def handle(self, *args, **options):
-        # Получение параметров суперпользователя из .env
         admin_username = os.getenv('ADMIN_USERNAME')
         admin_email = os.getenv('ADMIN_EMAIL')
         admin_password = os.getenv('ADMIN_PASSWORD')
@@ -24,11 +23,9 @@ class Command(BaseCommand):
             )
             return
 
-        # Применение миграций
         call_command('makemigrations')
         call_command('migrate', '--noinput')
 
-        # Проверка заполненности базы данных
         User = get_user_model()
         if User.objects.exists():
             self.stdout.write(
@@ -37,11 +34,9 @@ class Command(BaseCommand):
                 )
             )
         else:
-            # Загрузка данных из CSV
             self.stdout.write('Загрузка данных из CSV...')
             call_command('loadcsv')
 
-            # Создание суперпользователя
             self.stdout.write('Создание суперпользователя...')
             if not User.objects.filter(username=admin_username).exists():
                 User.objects.create_superuser(
@@ -58,8 +53,7 @@ class Command(BaseCommand):
                     )
                 )
 
-            # Добавление предопределённых тегов
-            self.stdout.write('Добавление предопределённых тегов...')
+            self.stdout.write('Создание тегов...')
             tags = [
                 {'name': 'Завтрак', 'slug': 'breakfast'},
                 {'name': 'Обед', 'slug': 'lunch'},
@@ -78,6 +72,5 @@ class Command(BaseCommand):
                             f'Тег "{tag_data["name"]}" уже существует.')
                     )
 
-        # Сборка статики
         call_command('collectstatic', '--noinput')
         self.stdout.write(self.style.SUCCESS('Статика успешно собрана.'))
