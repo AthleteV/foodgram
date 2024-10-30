@@ -21,6 +21,7 @@
 
 Создайте файл `.env` в корневой директории проекта и добавьте следующие параметры:
 
+```env
 POSTGRES_DB=postgres
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
@@ -34,6 +35,7 @@ DEBUG=False
 ADMIN_USERNAME=admin
 ADMIN_EMAIL=<admin_mail@mail.ru>
 ADMIN_PASSWORD=admin_password
+```
 
 Находясь в папке `infra`, выполните команду `docker compose up`.
 db: будет создан контейнер PostgreSQL
