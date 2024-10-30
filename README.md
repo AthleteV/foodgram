@@ -38,6 +38,7 @@ ADMIN_PASSWORD=admin_password
 ```
 
 Находясь в папке `infra`, выполните команду `docker compose up`.
+
 db: будет создан контейнер PostgreSQL
 
 backend: Django-бэкенд будет собран из директории `../backend`. Команда `python manage.py setup_all && gunicorn foodgram.wsgi:application --bind 0.0.0.0:8000`
