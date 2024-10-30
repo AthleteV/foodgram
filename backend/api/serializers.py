@@ -1,3 +1,5 @@
+from collections import Counter
+
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from recipes.constants import MIN_VALUE
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
@@ -143,8 +145,9 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(
         many=True, source='recipe_ingredients', read_only=True
     )
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(read_only=True, default=False)
+    is_in_shopping_cart = serializers.BooleanField(
+        read_only=True, default=False)
     image = serializers.ImageField(read_only=True)
 
     class Meta:
@@ -152,20 +155,6 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'tags', 'author', 'ingredients', 'is_favorited',
             'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time',
-        )
-
-    def get_is_favorited(self, obj):
-        user = self.context['request'].user
-        return (
-            user.is_authenticated
-            and Favorite.objects.filter(user=user, recipe=obj).exists()
-        )
-
-    def get_is_in_shopping_cart(self, obj):
-        user = self.context['request'].user
-        return (
-            user.is_authenticated
-            and ShoppingCart.objects.filter(user=user, recipe=obj).exists()
         )
 
 
@@ -198,16 +187,18 @@ class RecipeCreateUpdateDetailSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'ingredients': 'Рецепт должен содержать хотя бы 1 ингредиент.'
             })
+
         ingredient_ids = [
             ingredient['ingredient'].id for ingredient in ingredients
         ]
-        unique_ids = set(ingredient_ids)
-        if len(ingredient_ids) != len(unique_ids):
-            duplicates = [
-                str(ingredient_id)
-                for ingredient_id in unique_ids
-                if ingredient_ids.count(ingredient_id) > 1
-            ]
+        ingredient_counts = Counter(ingredient_ids)
+        duplicates = [
+            str(ingredient_id)
+            for ingredient_id, count in ingredient_counts.items()
+            if count > 1
+        ]
+
+        if duplicates:
             raise serializers.ValidationError({
                 'ingredients': (
                     'Ингредиенты должны быть уникальными. '
@@ -220,16 +211,20 @@ class RecipeCreateUpdateDetailSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'tags': 'Рецепт должен иметь хотя бы 1 тег.'
             })
-        if len(tags) != len(set(tags)):
-            duplicates = [
-                str(tag.id)
-                for tag in tags
-                if tags.count(tag) > 1
-            ]
+
+        tag_ids = [tag.id for tag in tags]
+        tag_counts = Counter(tag_ids)
+        duplicate_tags = [
+            str(tag_id)
+            for tag_id, count in tag_counts.items()
+            if count > 1
+        ]
+
+        if duplicate_tags:
             raise serializers.ValidationError({
                 'tags': (
                     'Теги должны быть уникальными. '
-                    f'Повторяются: {", ".join(duplicates)}'
+                    f'Повторяются: {", ".join(duplicate_tags)}'
                 )
             })
         return data

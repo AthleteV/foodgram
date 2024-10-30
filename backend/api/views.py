@@ -124,19 +124,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
 
     def get_queryset(self):
-        user = self.request.user
+        user_id = self.request.user.id
         queryset = Recipe.objects.select_related('author').prefetch_related(
             'tags', 'recipe_ingredients__ingredient'
         )
 
-        if user.is_authenticated:
+        if user_id:
             queryset = queryset.annotate(
                 is_favorited=Exists(
-                    Favorite.objects.filter(user=user, recipe=OuterRef('pk'))
+                    Favorite.objects.filter(
+                        user_id=user_id, recipe=OuterRef('pk'))
                 ),
                 is_in_shopping_cart=Exists(
                     ShoppingCart.objects.filter(
-                        user=user, recipe=OuterRef('pk'))
+                        user_id=user_id, recipe=OuterRef('pk'))
                 )
             )
         else:
